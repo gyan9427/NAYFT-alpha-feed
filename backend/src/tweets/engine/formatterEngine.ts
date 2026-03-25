@@ -6,27 +6,22 @@ export function truncateAsciiPreserveNewlines(text: string, maxChars: number): s
 
 export function formatterEngine(params: {
   hook: string;
+  title?: string;
   narrative?: string;
   hashtags?: string[];
   maxChars?: number;
 }): string {
-  const { hook, narrative, hashtags = ['#crypto', '#trading'], maxChars = 280 } = params;
+  const { hook, title, narrative, hashtags = ['#crypto', '#trading'], maxChars = 280 } = params;
 
   const maxLines = 4;
 
-  // Target tweet layout:
-  // 1) hook opening
-  // 2) item title
-  // 3) narrative (single line)
-  // 4) hashtags
-  const hookLines =
-    hook.trim() === ''
-      ? []
-      : hook
-          .split('\n')
-          .map((l) => l.trim())
-          .filter(Boolean)
-          .slice(0, 2);
+  // Target tweet layout (4 lines max):
+  // 1) Hook
+  // 2) Rewritten Title
+  // 3) Narrative (single line)
+  // 4) Hashtags
+  const hookLine = hook.trim();
+  const titleLine = (title ?? '').replace(/\s+/g, ' ').trim();
 
   const narrativeSingleLine = narrative
     ? narrative.replace(/\s*\n\s*/g, ' ').replace(/\s+/g, ' ').trim()
@@ -34,33 +29,46 @@ export function formatterEngine(params: {
 
   const hashtagsLine = hashtags.length ? hashtags.join(' ') : '';
 
-  const baseLines = [...hookLines];
-  if (hashtagsLine) baseLines.push(hashtagsLine);
-
-  const totalLines = baseLines.length + (narrativeSingleLine ? 1 : 0);
-  void totalLines; // line count is enforced by construction below.
-
-  // Ensure hashtags don't get truncated off by truncating only the narrative portion first.
-  // If we can't fit even an empty narrative + hashtags within maxChars, we fall back to global truncation.
-  const build = (narr: string) => [...hookLines, narr, hashtagsLine].join('\n');
-
-  if (hashtagsLine) {
-    const fixedLen = build('').length;
-    const allowedNarrativeLen = maxChars - fixedLen;
-    const narrativeToUse =
-      allowedNarrativeLen > 0
-        ? narrativeSingleLine.length <= allowedNarrativeLen
-          ? narrativeSingleLine
-          : truncateAsciiPreserveNewlines(narrativeSingleLine, allowedNarrativeLen)
-        : '';
-
-    const out = build(narrativeToUse);
-    const outLines = out.split('\n').slice(0, maxLines).join('\n');
-    return truncateAsciiPreserveNewlines(outLines, maxChars);
+  /** Final tweet shape; empty segments are skipped (same as before). */
+  function joinTweet(narr: string): string {
+    return [hookLine, titleLine, narr, hashtagsLine].filter((p) => p !== '').join('\n');
   }
 
-  // No hashtags (shouldn't happen with defaults), so do a simple truncation.
-  const out = [...hookLines, narrativeSingleLine].filter(Boolean).slice(0, maxLines).join('\n');
+  if (hashtagsLine) {
+    // Fit within maxChars by shortening ONLY the narrative. Never apply a global truncate
+    // after join (that was cutting the hashtag line to "#crypto #tra...").
+    if (joinTweet(narrativeSingleLine).length <= maxChars) {
+      return joinTweet(narrativeSingleLine).split('\n').slice(0, maxLines).join('\n');
+    }
+
+    // Max prefix length of narrative such that full tweet <= maxChars
+    let best = 0;
+    let lo = 0;
+    let hi = narrativeSingleLine.length;
+    while (lo <= hi) {
+      const mid = Math.floor((lo + hi) / 2);
+      if (joinTweet(narrativeSingleLine.slice(0, mid)).length <= maxChars) {
+        best = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+
+    let narrativeToUse = narrativeSingleLine.slice(0, best);
+
+    // Prefer ending on a word boundary when we had to trim (still <= maxChars).
+    if (best < narrativeSingleLine.length && best > 12) {
+      const cut = narrativeToUse.lastIndexOf(' ');
+      if (cut > best * 0.55) {
+        const softer = narrativeSingleLine.slice(0, cut);
+        if (joinTweet(softer).length <= maxChars) narrativeToUse = softer;
+      }
+    }
+
+    return joinTweet(narrativeToUse).split('\n').slice(0, maxLines).join('\n');
+  }
+
+  const out = [hookLine, titleLine, narrativeSingleLine].filter(Boolean).slice(0, maxLines).join('\n');
   return truncateAsciiPreserveNewlines(out, maxChars);
 }
-

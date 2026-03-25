@@ -9,6 +9,7 @@ import { hookEngine } from '../engine/hookEngine';
 import { narrativeEngine } from '../engine/narrativeEngine';
 import { formatterEngine } from '../engine/formatterEngine';
 import { selectStyleType } from '../engine/styleEngine';
+import { rewriteTitle } from '../engine/titleRewriteEngine';
 
 type CacheState = {
   mtimeMs: number;
@@ -54,8 +55,9 @@ async function getNormalizedItems(): Promise<CacheState> {
 function generateTweetForItem(item: NormalizedIntelligenceItem, rank: number): GeneratedTweet {
   const styleType = selectStyleType(item);
   const hook = hookEngine(item, styleType);
+  const title = rewriteTitle(item);
   const narrative = narrativeEngine(item);
-  const tweetText = formatterEngine({ hook, narrative });
+  const tweetText = formatterEngine({ hook, title, narrative });
 
   return {
     id: item.id,
