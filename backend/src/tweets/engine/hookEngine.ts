@@ -1,17 +1,11 @@
 import type { NormalizedIntelligenceItem } from '../types';
+import type { TweetStyleType } from './styleEngine';
+import { selectHookOpening } from './hookTemplates';
 
-export function hookEngine(item: NormalizedIntelligenceItem): string {
-  const sig = item.signal;
-
-  const parts: string[] = [];
-  if (sig?.direction) parts.push(sig.direction);
-  if (sig?.strengthLabel) parts.push(sig.strengthLabel);
-  if (sig?.timing) parts.push(sig.timing);
-
-  const header =
-    parts.length > 0 ? `${item.coin} Alert (${parts.join(', ')})` : `${item.coin} Alert`;
+export function hookEngine(item: NormalizedIntelligenceItem, styleType: TweetStyleType): string {
+  const hookOpening = selectHookOpening(item, styleType);
 
   // Keep the original title text as-is to avoid changing factual meaning.
-  return [header, item.title].join('\n');
+  return [hookOpening, item.title].filter(Boolean).join('\n');
 }
 

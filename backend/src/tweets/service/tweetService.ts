@@ -3,10 +3,12 @@ import type { NormalizedIntelligenceItem, GeneratedTweet } from '../types';
 import type { NewsIntelligenceRaw } from '../intelligence/loadNewsIntelligence';
 import { loadNewsIntelligenceJson, getNewsIntelligenceJsonPath } from '../intelligence/loadNewsIntelligence';
 import { normalizeNewsIntelligence } from '../intelligence/normalize';
+import { filterIntelligenceItems } from '../selector/filterEngine';
 import { selectTopIntelligenceItems } from '../selector/selectorEngine';
 import { hookEngine } from '../engine/hookEngine';
 import { narrativeEngine } from '../engine/narrativeEngine';
 import { formatterEngine } from '../engine/formatterEngine';
+import { selectStyleType } from '../engine/styleEngine';
 
 type CacheState = {
   mtimeMs: number;
@@ -50,7 +52,8 @@ async function getNormalizedItems(): Promise<CacheState> {
 }
 
 function generateTweetForItem(item: NormalizedIntelligenceItem, rank: number): GeneratedTweet {
-  const hook = hookEngine(item);
+  const styleType = selectStyleType(item);
+  const hook = hookEngine(item, styleType);
   const narrative = narrativeEngine(item);
   const tweetText = formatterEngine({ hook, narrative });
 
@@ -86,12 +89,14 @@ export async function getGeneratedTweets(params: {
   const { limit, onlyHighlighted } = params;
   const cacheState = await getNormalizedItems();
 
-  const selected = selectTopIntelligenceItems(cacheState.items, {
+  // Filter BEFORE ranking (selector ordering remains deterministic).
+  const filtered = filterIntelligenceItems(cacheState.items);
+  const selectedFiltered = selectTopIntelligenceItems(filtered, {
     limit,
     onlyHighlighted,
   });
 
-  const tweets = selected.map((it, idx) => generateTweetForItem(it, idx + 1));
+  const tweets = selectedFiltered.map((it, idx) => generateTweetForItem(it, idx + 1));
 
   return {
     tweets,
