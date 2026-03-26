@@ -98,9 +98,11 @@ export function rewriteTitle(item: NormalizedIntelligenceItem): string {
   const pctWindow = extractPercentAndWindow(title);
   if (pctWindow) {
     const variants = [
-      '{coin} just moved {pct} in {window}... but this might not be what it looks like.',
+      '{coin} just moved {pct} in {window}... this might be misleading.',
+      '{coin} just moved {pct} in {window}... this move is not as simple as it looks.',
+      '{coin} just moved {pct} in {window}... this could be a trap.',
       '{coin} just moved {pct} in {window}... and the market reaction feels off.',
-      '{coin} just moved {pct} in {window}... but the headline doesn\'t tell the whole story.',
+      '{coin} just moved {pct} in {window}... but this might not be what it looks like.',
     ];
     const idx = stableHash(`${item.id}|title|pctWindow`) % variants.length;
     return variants[idx]

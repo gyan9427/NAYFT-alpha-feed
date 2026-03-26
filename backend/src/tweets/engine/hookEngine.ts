@@ -1,8 +1,15 @@
 import type { NormalizedIntelligenceItem } from '../types';
 import type { TweetStyleType } from './styleEngine';
-import { selectHookOpening, type HookIntensity } from './hookTemplates';
+import { selectHookFromLibrary, type HookIntensity } from './hookLibrary';
 
-export function hookEngine(item: NormalizedIntelligenceItem, styleType: TweetStyleType): string {
+/**
+ * @param rewrittenTitle Optional rewritten title line so hooks align with timeline (e.g. reaction hooks after a move).
+ */
+export function hookEngine(
+  item: NormalizedIntelligenceItem,
+  styleType: TweetStyleType,
+  rewrittenTitle?: string,
+): string {
   const confidence = item.signal?.confidence;
   const direction = item.signal?.direction;
   const signalType = item.signal?.signalType;
@@ -18,6 +25,6 @@ export function hookEngine(item: NormalizedIntelligenceItem, styleType: TweetSty
     if (direction === 'neutral' || signalType === 'none') intensity = 'medium';
   }
 
-  return selectHookOpening({ item, styleType, intensity });
+  return selectHookFromLibrary({ item, styleType, intensity, rewrittenTitle });
 }
 

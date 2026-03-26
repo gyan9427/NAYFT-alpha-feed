@@ -46,3 +46,14 @@ export type GeneratedTweet = {
   };
 };
 
+export interface TweetsMeta {
+  limit: number;
+  totalItemsConsidered: number;
+  returnedCount: number;
+  onlyHighlighted?: boolean;
+  generatedAtUtc: string;
+  intelligenceSource?: 'analyse' | 'local';
+  highlightFallbackUsed?: boolean;
+  filterBypassUsed?: boolean;
+}
+

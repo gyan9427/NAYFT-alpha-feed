@@ -4,14 +4,68 @@ export function truncateAsciiPreserveNewlines(text: string, maxChars: number): s
   return `${text.slice(0, maxChars - 3)}...`;
 }
 
+function stableHash(str: string): number {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return hash >>> 0;
+}
+
+const STOP = new Set([
+  'the',
+  'this',
+  'that',
+  'with',
+  'from',
+  'just',
+  'move',
+  'like',
+  'what',
+  'when',
+  'here',
+  'there',
+  'than',
+  'into',
+  'about',
+]);
+
+function significantTokens(s: string, coin: string): Set<string> {
+  const lower = s.toLowerCase();
+  const withCoin = lower.replace(new RegExp(`\\b${coin}\\b`, 'gi'), ' ');
+  const words = withCoin.split(/\W+/).filter((w) => w.length > 3 && !STOP.has(w));
+  return new Set(words);
+}
+
+/** If hook and title repeat the same core idea, swap title for a complementary line. */
+function dedupeHookTitle(hook: string, title: string, coin: string): string {
+  if (!hook || !title) return title;
+  const a = significantTokens(hook, coin);
+  const b = significantTokens(title, coin);
+  let overlap = 0;
+  for (const w of b) {
+    if (a.has(w)) overlap++;
+  }
+  if (overlap < 2) return title;
+
+  const alts = [
+    `${coin}: follow-through matters more than the first print.`,
+    `${coin}: watch the tape confirm the story, not the headline.`,
+    `The real question for ${coin} is what happens next, not what already printed.`,
+  ];
+  return alts[stableHash(`${hook}|${title}|${coin}`) % alts.length];
+}
+
 export function formatterEngine(params: {
   hook: string;
   title?: string;
   narrative?: string;
   hashtags?: string[];
   maxChars?: number;
+  coin?: string;
 }): string {
-  const { hook, title, narrative, hashtags = ['#crypto', '#trading'], maxChars = 280 } = params;
+  const { hook, title, narrative, hashtags = ['#crypto', '#trading'], maxChars = 280, coin = '' } = params;
 
   const maxLines = 4;
 
@@ -21,7 +75,8 @@ export function formatterEngine(params: {
   // 3) Narrative (single line)
   // 4) Hashtags
   const hookLine = hook.trim();
-  const titleLine = (title ?? '').replace(/\s+/g, ' ').trim();
+  const titleRaw = (title ?? '').replace(/\s+/g, ' ').trim();
+  const titleLine = coin ? dedupeHookTitle(hookLine, titleRaw, coin) : titleRaw;
 
   const narrativeSingleLine = narrative
     ? narrative.replace(/\s*\n\s*/g, ' ').replace(/\s+/g, ' ').trim()

@@ -31,6 +31,20 @@ export function createTweetsRouter(): Router {
     }
   });
 
+  router.post('/tweets/analyse', async (req: Request, res: Response) => {
+    try {
+      const limit = parseLimit(req, 10);
+      const result = await getGeneratedTweets({
+        limit,
+        onlyHighlighted: true,
+        useDynamicIntelligence: true,
+      });
+      res.json({ success: true, data: result.tweets, meta: result.meta });
+    } catch (e) {
+      res.status(500).json({ success: false, error: 'Failed to generate tweets from analyse' });
+    }
+  });
+
   return router;
 }
 
