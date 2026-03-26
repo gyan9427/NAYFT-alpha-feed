@@ -160,6 +160,23 @@ const HOOK_LIBRARY: Record<HookLibraryKind, Tier> = {
   },
 };
 
+export const lowSignalHooks: string[] = [
+  'Not much clarity on {coin} right now.',
+  "This {coin} update doesn't point to a clear direction yet.",
+  "Still early - {coin} isn't showing a strong signal.",
+  'No strong signal on {coin} yet - just noise so far.',
+  '{coin} is moving, but without clear intent.',
+  'Hard to draw a conclusion on {coin} from this alone.',
+  'This {coin} move lacks conviction so far.',
+  'Nothing decisive on {coin} yet.',
+];
+
+export function selectLowSignalHook(item: NormalizedIntelligenceItem): string {
+  const templates = lowSignalHooks;
+  const index = stableHash(`${item.id}|lowSignalHook`) % templates.length;
+  return fillTemplate(templates[index], { coin: item.coin, strength: strengthForTemplate(item) });
+}
+
 function pickKind(
   item: NormalizedIntelligenceItem,
   styleType: TweetStyleType,

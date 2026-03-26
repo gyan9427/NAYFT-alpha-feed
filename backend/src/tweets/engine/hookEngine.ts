@@ -1,6 +1,6 @@
 import type { NormalizedIntelligenceItem } from '../types';
 import type { TweetStyleType } from './styleEngine';
-import { selectHookFromLibrary, type HookIntensity } from './hookLibrary';
+import { selectHookFromLibrary, selectLowSignalHook, type HookIntensity } from './hookLibrary';
 
 /**
  * @param rewrittenTitle Optional rewritten title line so hooks align with timeline (e.g. reaction hooks after a move).
@@ -9,7 +9,14 @@ export function hookEngine(
   item: NormalizedIntelligenceItem,
   styleType: TweetStyleType,
   rewrittenTitle?: string,
+  options?: { isLowSignalMode?: boolean },
 ): string {
+  const isLowSignalMode = options?.isLowSignalMode === true;
+
+  if (isLowSignalMode) {
+    return selectLowSignalHook(item);
+  }
+
   const confidence = item.signal?.confidence;
   const direction = item.signal?.direction;
   const signalType = item.signal?.signalType;

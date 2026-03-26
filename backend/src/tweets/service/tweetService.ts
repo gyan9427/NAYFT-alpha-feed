@@ -112,11 +112,23 @@ function tieredSelectIntelligenceItems(
   return { selected, highlightFallbackUsed, filterBypassUsed };
 }
 
-function generateTweetForItem(item: NormalizedIntelligenceItem, rank: number): GeneratedTweet {
+function generateTweetForItem(
+  item: NormalizedIntelligenceItem,
+  rank: number,
+  opts?: { isLowSignalMode?: boolean },
+): GeneratedTweet | null {
+  const isLowSignalMode = opts?.isLowSignalMode === true;
+
   const styleType = selectStyleType(item);
   const title = rewriteTitle(item);
-  const hook = hookEngine(item, styleType, title);
-  const narrative = narrativeEngine(item, { hookLine: hook, titleLine: title });
+
+  // Optional title filter (edge case): skip broken-looking title lines.
+  if (title.length < 10 || title.endsWith('vs.')) {
+    return null;
+  }
+
+  const hook = hookEngine(item, styleType, title, { isLowSignalMode });
+  const narrative = narrativeEngine(item, { hookLine: hook, titleLine: title }, { isLowSignalMode });
   const tweetText = formatterEngine({ hook, title, narrative, coin: item.coin });
 
   return {
@@ -155,7 +167,10 @@ export async function getGeneratedTweets(params: {
       onlyHighlighted
     );
 
-    const tweets = selected.map((it, idx) => generateTweetForItem(it, idx + 1));
+    const isLowSignalMode = filterBypassUsed === true;
+    const tweets = selected
+      .map((it, idx) => generateTweetForItem(it, idx + 1, { isLowSignalMode }))
+      .filter((t): t is GeneratedTweet => t !== null);
 
     return {
       tweets,
@@ -180,7 +195,10 @@ export async function getGeneratedTweets(params: {
     onlyHighlighted
   );
 
-  const tweets = selected.map((it, idx) => generateTweetForItem(it, idx + 1));
+  const isLowSignalMode = filterBypassUsed === true;
+  const tweets = selected
+    .map((it, idx) => generateTweetForItem(it, idx + 1, { isLowSignalMode }))
+    .filter((t): t is GeneratedTweet => t !== null);
 
   return {
     tweets,

@@ -95,3 +95,61 @@ A lot of this downside may already be priced in, but pressure is still strong—
 #crypto #trading
 ```
 (When overlap is detected, title is replaced with a complementary deterministic line.)
+
+## Low-Signal Mode Examples (Normal vs Low-Signal)
+
+These illustrate the **tone downgrade** when `meta.filterBypassUsed === true` (low-signal mode). Title rewriting remains unchanged; only **hook** and **narrative** switch.
+
+### Example LS1 (BTC)
+
+#### Normal mode (stronger signal)
+```
+Something about BTC is not lining up with the obvious story.
+BTC is back in focus right now.
+A lot of this move may already be priced in, but the setup is still hot—so chasing this move can be risky here.
+#crypto #trading
+```
+
+#### Low-signal mode (filter bypass)
+```
+No strong signal on BTC yet - just noise so far.
+BTC is back in focus right now.
+No clear edge from this alone - better to wait for stronger confirmation before acting.
+#crypto #trading
+```
+
+### Example LS2 (ETH)
+
+#### Normal mode (stronger signal)
+```
+There is something unusual happening with ETH right now.
+Something around ETH is worth watching right now.
+This setup can matter if follow-through confirms it, but the first print alone can be misleading.
+#crypto #trading
+```
+
+#### Low-signal mode (filter bypass)
+```
+Not much clarity on ETH right now.
+Something around ETH is worth watching right now.
+This doesn't offer a strong signal yet - more context is needed before forming a view.
+#crypto #trading
+```
+
+### Example LS3 (SOL)
+
+#### Normal mode (stronger signal)
+```
+This could be a risky moment for SOL.
+This SOL setup is starting to look risky.
+Pressure is still strong—so chasing this move can be risky here.
+#crypto #trading
+```
+
+#### Low-signal mode (filter bypass)
+```
+Hard to draw a conclusion on SOL from this alone.
+SOL is back in focus right now.
+So far, this looks inconclusive - not enough to justify a trade decision.
+#crypto #trading
+```
