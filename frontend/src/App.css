@@ -59,6 +59,18 @@
   margin-top: 0.75rem;
 }
 
+.cached-notice {
+  color: #fdd663;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
+.filter-bypass-notice {
+  color: #8ab4f8;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
 .feed {
   margin-top: 1.25rem;
   display: flex;

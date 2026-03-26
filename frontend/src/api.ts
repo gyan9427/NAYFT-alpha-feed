@@ -28,6 +28,17 @@ export type NayftTweet = {
 
 type ApiOkTweets = { success: true; data: NayftTweet[] };
 
+export type AnalyseTweetsMeta = {
+  limit?: number;
+  totalItemsConsidered?: number;
+  returnedCount?: number;
+  onlyHighlighted?: boolean;
+  generatedAtUtc?: string;
+  intelligenceSource?: 'analyse' | 'local';
+  highlightFallbackUsed?: boolean;
+  filterBypassUsed?: boolean;
+};
+
 export async function fetchSignals(limit = 50): Promise<NayftSignal[]> {
   const r = await fetch(`${base}/nayft/signals?limit=${limit}`);
   const j = (await r.json()) as ApiOk | { success: false };
@@ -55,4 +66,16 @@ export async function fetchTopTweets(limit = 5): Promise<NayftTweet[]> {
   const j = (await r.json()) as ApiOkTweets | { success: false };
   if (!r.ok || !('data' in j)) throw new Error('Failed to load top tweets');
   return j.data;
+}
+
+export async function postAnalyseTweets(limit = 10): Promise<{
+  tweets: NayftTweet[];
+  meta?: AnalyseTweetsMeta;
+}> {
+  const r = await fetch(`${base}/nayft/tweets/analyse?limit=${limit}`, { method: 'POST' });
+  const j = (await r.json()) as
+    | { success: true; data: NayftTweet[]; meta?: AnalyseTweetsMeta }
+    | { success: false };
+  if (!r.ok || !('data' in j)) throw new Error('Failed to generate tweets from analyse');
+  return { tweets: j.data, meta: j.meta };
 }

@@ -1,17 +1,37 @@
 import type { NormalizedIntelligenceItem } from '../types';
+import type { TweetStyleType } from './styleEngine';
+import { selectHookFromLibrary, selectLowSignalHook, type HookIntensity } from './hookLibrary';
 
-export function hookEngine(item: NormalizedIntelligenceItem): string {
-  const sig = item.signal;
+/**
+ * @param rewrittenTitle Optional rewritten title line so hooks align with timeline (e.g. reaction hooks after a move).
+ */
+export function hookEngine(
+  item: NormalizedIntelligenceItem,
+  styleType: TweetStyleType,
+  rewrittenTitle?: string,
+  options?: { isLowSignalMode?: boolean },
+): string {
+  const isLowSignalMode = options?.isLowSignalMode === true;
 
-  const parts: string[] = [];
-  if (sig?.direction) parts.push(sig.direction);
-  if (sig?.strengthLabel) parts.push(sig.strengthLabel);
-  if (sig?.timing) parts.push(sig.timing);
+  if (isLowSignalMode) {
+    return selectLowSignalHook(item);
+  }
 
-  const header =
-    parts.length > 0 ? `${item.coin} Alert (${parts.join(', ')})` : `${item.coin} Alert`;
+  const confidence = item.signal?.confidence;
+  const direction = item.signal?.direction;
+  const signalType = item.signal?.signalType;
 
-  // Keep the original title text as-is to avoid changing factual meaning.
-  return [header, item.title].join('\n');
+  let intensity: HookIntensity = 'low';
+  if (typeof confidence === 'number' && Number.isFinite(confidence)) {
+    if (confidence >= 0.75) intensity = 'high';
+    else if (confidence >= 0.6) intensity = 'medium';
+  }
+
+  // Gate HIGH intensity to avoid over-hype on neutral/none signals.
+  if (intensity === 'high') {
+    if (direction === 'neutral' || signalType === 'none') intensity = 'medium';
+  }
+
+  return selectHookFromLibrary({ item, styleType, intensity, rewrittenTitle });
 }
 

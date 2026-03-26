@@ -3,6 +3,7 @@ import {
   fetchSignals,
   fetchSignalsByCoin,
   fetchTweets,
+  postAnalyseTweets,
   type NayftSignal,
   type NayftTweet
 } from './api';
@@ -32,7 +33,10 @@ export default function App() {
 
   const [tweets, setTweets] = useState<NayftTweet[]>([]);
   const [tweetsLoading, setTweetsLoading] = useState(false);
+  const [analyseLoading, setAnalyseLoading] = useState(false);
   const [tweetsError, setTweetsError] = useState<string | null>(null);
+  const [tweetsCachedNotice, setTweetsCachedNotice] = useState(false);
+  const [filterBypassNotice, setFilterBypassNotice] = useState(false);
 
   const [copyId, setCopyId] = useState<string | null>(null);
 
@@ -53,6 +57,8 @@ export default function App() {
   const loadTweetsSection = async () => {
     setTweetsLoading(true);
     setTweetsError(null);
+    setTweetsCachedNotice(false);
+    setFilterBypassNotice(false);
     try {
       const data = await fetchTweets(10);
       setTweets(data);
@@ -60,6 +66,33 @@ export default function App() {
       setTweetsError(e instanceof Error ? e.message : 'Request failed');
     } finally {
       setTweetsLoading(false);
+    }
+  };
+
+  const loadFreshTweetsFromAnalyse = async () => {
+    setAnalyseLoading(true);
+    setTweetsError(null);
+    setTweetsCachedNotice(false);
+    setFilterBypassNotice(false);
+    try {
+      const { tweets: data, meta } = await postAnalyseTweets(10);
+      setTweets(data);
+      if (meta?.intelligenceSource === 'local') {
+        setTweetsCachedNotice(true);
+      }
+      if (meta?.filterBypassUsed) {
+        setFilterBypassNotice(true);
+      }
+    } catch {
+      setTweetsCachedNotice(true);
+      try {
+        const data = await fetchTweets(10);
+        setTweets(data);
+      } catch (e) {
+        setTweetsError(e instanceof Error ? e.message : 'Request failed');
+      }
+    } finally {
+      setAnalyseLoading(false);
     }
   };
 
@@ -148,19 +181,34 @@ export default function App() {
         </h2>
 
         {tweetsError && <p className="error">{tweetsError}</p>}
+        {tweetsCachedNotice && <p className="cached-notice">Using cached data</p>}
+        {filterBypassNotice && (
+          <p className="filter-bypass-notice">
+            Low-confidence signals — showing best available insights
+          </p>
+        )}
 
         <div className="toolbar" style={{ marginBottom: '0.75rem' }}>
           <button
             type="button"
             onClick={() => void loadTweetsSection()}
-            disabled={tweetsLoading}
+            disabled={tweetsLoading || analyseLoading}
           >
             {tweetsLoading ? 'Loading…' : 'Refresh Tweets'}
+          </button>
+          <button
+            type="button"
+            onClick={() => void loadFreshTweetsFromAnalyse()}
+            disabled={tweetsLoading || analyseLoading}
+          >
+            {analyseLoading ? 'Analyzing market...' : 'Generate Fresh Tweets'}
           </button>
         </div>
 
         <main className="feed" style={{ marginTop: '0.9rem' }}>
-          {tweets.length === 0 && !tweetsLoading && <p className="empty">No tweets yet.</p>}
+          {tweets.length === 0 && !tweetsLoading && !analyseLoading && (
+            <p className="empty">No tweets yet.</p>
+          )}
           {tweets.map((t, i) => {
             const id = `tweet-${t.coin}-${t.rank}-${i}`;
             return (
